@@ -41,13 +41,13 @@ lazada运营站点大致表现:
 """
 
 
-def get_a_station_perf(station_name, file_path, perf_keep_point=2):
+def get_a_station_perf(station_name, station_data, perf_keep_point=2):
     """
     得到一个站点的表现
     :param station_name:str
          站点名
-    :param file_path:path
-         站点文件路径
+    :param station_data:pd.DataFrame
+         站点数据
     :param perf_keep_point:int default 2
          表现保存的小数点
     :return:pd.DataFrame
@@ -58,15 +58,12 @@ def get_a_station_perf(station_name, file_path, perf_keep_point=2):
     account = station_name[:-3]
     site = station_name[-2:]
     if site not in static_param.SITE_EN_ZH.keys():
-        raise ValueError(
-            f'{site} not in {static_param.SITE_EN_ZH.keys()}.Please check {station_name} is a valid station name.')
-    public_function.detect_file(file_path)
+        raise messagebox.showinfo(f'{site} error',f'{station_name} 中{site}不是有效国家名,请检查后再次运行程序.')
     # 读取站点数据
-    station_data = process_station.read_file(file_path)
+    if station_data is None:
+        return
     if station_data.empty:
         return
-    # 初始化站点数据
-    station_data = process_station.init_file_data(station_name, station_data)
     # 汇总站点表现
     spend_columns_name = 'Est. Spend'
     sales_columns_name = 'Revenue'
@@ -88,7 +85,7 @@ def get_a_station_perf(station_name, file_path, perf_keep_point=2):
     return station_perf
 
 
-def station_perf_by_ordered_sku(station_name, file_path, perf_keep_point=2, have_ordered=True):
+def station_perf_by_ordered_sku(station_name, station_data, perf_keep_point=2, have_ordered=True):
     """
     获取站点有订单sku的表现
     have_ordered:bool default True
@@ -100,11 +97,8 @@ def station_perf_by_ordered_sku(station_name, file_path, perf_keep_point=2, have
     account = station_name[:-3]
     site = station_name[-2:]
     if site not in static_param.SITE_EN_ZH.keys():
-        raise ValueError(
-            f'{site} not in {static_param.SITE_EN_ZH.keys()}.Please check {station_name} is a valid station name.')
-    public_function.detect_file(file_path)
-    # 读取站点数据
-    station_data = process_station.read_file(file_path)
+        raise messagebox.showinfo(f'{site} error',
+            f'{station_name} 中{site}不是有效国家名,请检查后再次运行程序.')
     if station_data.empty:
         return
     # 初始化站点数据
@@ -183,15 +177,22 @@ def get_all_station_perf(all_stations_folder):
         if not station_files:
             continue
         elif len(station_files) > 1:
-            raise ValueError(f'{station_dir} have multiple files.Just keep one file')
+            raise messagebox.showinfo('重复文件',f'{station_dir} 目录下有多个文件,请删除一个后再次运行.')
         file_path = os.path.join(station_dir, station_files[0])
         station_name = os.path.basename(station_dir)
+        # 站点数据
+        station_data = process_station.read_file(file_path)
+        station_data = process_station.init_file_data(station_name, station_data)
+        if station_data is None:
+            continue
+        if station_data.empty:
+            continue
         # 站点整体表现
-        station_perf = get_a_station_perf(station_name, file_path)
+        station_perf = get_a_station_perf(station_name, station_data)
         # 有订单sku表现
-        sku_have_ordered_perf = station_perf_by_ordered_sku(station_name, file_path, have_ordered=True)
+        sku_have_ordered_perf = station_perf_by_ordered_sku(station_name, station_data, have_ordered=True)
         # 没有订单sku表现
-        sku_no_ordered_perf = station_perf_by_ordered_sku(station_name, file_path, have_ordered=False)
+        sku_no_ordered_perf = station_perf_by_ordered_sku(station_name, station_data, have_ordered=False)
         if station_perf is not None:
             all_stations_perf.append(station_perf)
         if sku_have_ordered_perf is not None:
@@ -248,12 +249,12 @@ def process_stations_perf():
     site_exchange_rate_df.to_excel(writer, sheet_name='汇率', index=False)
     writer.save()
     # 输出
-    showtext = f'处理完毕,结果输出在文件: {export_path} 中.请关闭此窗口.或此窗口将在5秒钟后自动关闭'
+    showtext = f'处理完毕,结果输出在文件: {export_path} 中.请关闭此窗口.或此窗口将在3秒钟后自动关闭'
     lab3.insert('insert','\n')
     lab3.insert('insert','\n')
     lab3.insert('insert', showtext)
     lab3.update()
-    time.sleep(5)
+    time.sleep(3)
     win.destroy()
 
 

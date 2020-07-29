@@ -7,6 +7,7 @@
 # @File    : public_function.py
 
 import os
+from datetime import datetime
 
 
 def detect_file(file_path):
@@ -37,3 +38,14 @@ def detect_folder(folder_path):
         raise TypeError(f'{folder_path} is not a file.')
     if not os.path.exists(folder_path):
         raise FileExistsError(f'{folder_path} is not exists.')
+
+
+def run_time(func):
+    def wrapper(*args, **kwargs):
+        start_time = datetime.now()
+        result = func(*args, **kwargs)
+        end_time = datetime.now()
+        cost_time = end_time - start_time
+        print(f'{func.__name__}花费:{cost_time}')
+        return result
+    return wrapper

@@ -61,8 +61,10 @@ def rename_columns(data):
     """
     # 修改广告报表列名
     rename_columns_dict = {'日期': 'Date', '商品名称': 'Product Name', '预估花费': 'Est. Spend', '支付金额': 'Revenue',
-                           '订单数': 'Orders',
-                           '支付件数': 'Units Sold', '投入产出比': 'Est ROI'}
+                           '订单数': 'Orders', '支付件数': 'Units Sold', '投入产出比': 'Est ROI', 'Tanggal': 'Date',
+                           'Nama Produk': 'Product Name',
+                           'Estimasi Pengeluaran': 'Est. Spend', 'Pendapatan': 'Revenue', 'Pesanan': 'Orders',
+                           'Produk Terjual': 'Units Sold', 'Estimasi Tingkat Pengembalian Keuntungan': 'Est ROI'}
     data.rename(columns=rename_columns_dict, inplace=True)
 
 
@@ -152,6 +154,3 @@ def init_file_data(station_name, file_data):
     # 修改某些列的数据类型
     trans_columns_type(file_data)
     return file_data
-
-
-

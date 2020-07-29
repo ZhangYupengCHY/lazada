@@ -30,4 +30,4 @@ exe = EXE(pyz,
           upx=True,
           upx_exclude=[],
           runtime_tmpdir=None,
-          console=False , version='D:\\pycharmproject\\lazada\\file_version_info.txt', icon='L_32.ico')
+          console=False , version='file_version_info.txt', icon='L_32.ico')

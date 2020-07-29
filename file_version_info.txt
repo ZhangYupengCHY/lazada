@@ -6,8 +6,8 @@ VSVersionInfo(
   ffi=FixedFileInfo(
     # filevers and prodvers should be always a tuple with four items: (1, 2, 3, 4)
     # Set not needed items to zero 0.
-    filevers=(0, 1, 0, 0),
-    prodvers=(0, 1, 0, 0),
+    filevers=(0, 1, 0, 2),
+    prodvers=(0, 1, 0, 2),
     # Contains a bitmask that specifies the valid bits 'flags'r
     mask=0x17,
     # Contains a bitmask that specifies the Boolean attributes of the file.
@@ -30,12 +30,12 @@ VSVersionInfo(
       StringTable(
         u'040904b0',
         [StringStruct(u'FileDescription', u'lazada stations perf'),
-        StringStruct(u'FileVersion', u'0.1.0.0'),
+        StringStruct(u'FileVersion', u'0.1.0.2'),
         StringStruct(u'InternalName', u'yibai ad group'),
-        StringStruct(u'LegalCopyright', u'Copyright (C) 2014 Yibai Ad Group'),
+        StringStruct(u'LegalCopyright', u'Copyright (C) 2011 Yibai Ad Group'),
         StringStruct(u'OriginalFilename', u'lazada_stations_perf.exe'),
         StringStruct(u'ProductName', u'lazada stations perf'),
-        StringStruct(u'ProductVersion', u'0.1.0.0')])
+        StringStruct(u'ProductVersion', u'0.1.0.2')])
       ]), 
     VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
   ]
