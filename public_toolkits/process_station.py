@@ -60,12 +60,16 @@ def rename_columns(data):
 
     """
     # 修改广告报表列名
-    rename_columns_dict = {'日期': 'Date', '商品名称': 'Product Name', '预估花费': 'Est. Spend', '支付金额': 'Revenue',
-                           '订单数': 'Orders', '支付件数': 'Units Sold', '投入产出比': 'Est ROI', 'Tanggal': 'Date',
-                           'Nama Produk': 'Product Name',
-                           'Estimasi Pengeluaran': 'Est. Spend', 'Pendapatan': 'Revenue', 'Pesanan': 'Orders',
-                           'Produk Terjual': 'Units Sold', 'Estimasi Tingkat Pengembalian Keuntungan': 'Est ROI'}
-    data.rename(columns=rename_columns_dict, inplace=True)
+    # dict of list
+    rename_columns_dict = {'Date': ['日期', 'Tanggal', 'Ngày'], 'Product Name': ['商品名称', 'Nama Produk', 'Tên sản phẩm'],
+                           'Est. Spend': ['预估花费', 'Estimasi Pengeluaran', 'Phí dự toán'],
+                           'Revenue': ['支付金额', 'Pendapatan', 'Doanh thu'], 'Orders': ['订单数', 'Pesanan', 'Đơn hàng'],
+                           'Units Sold': ['支付件数', 'Produk Terjual', 'Sản phẩm'],
+                           'Est ROI': ['投入产出比', 'Estimasi Tingkat Pengembalian Keuntungan',
+                                       'Tỷ suất lợi nhuận ước tính']}
+    for standard_col, nonstandard_col_list in rename_columns_dict.items():
+        rename_dict = {nonstandard_col: standard_col for nonstandard_col in nonstandard_col_list}
+        data.rename(columns=rename_dict, inplace=True)
 
 
 # 将列转换为数值:整型或是浮点型(保留几位有效数据)
@@ -153,4 +157,7 @@ def init_file_data(station_name, file_data):
     rename_columns(file_data)
     # 修改某些列的数据类型
     trans_columns_type(file_data)
+    # 核对表头
+    columns = ['Date','Product Name','Seller SKU','SKU ID','Est. Spend','Revenue','Orders','Units Sold','Est ROI']
+    file_data = file_data[columns]
     return file_data
