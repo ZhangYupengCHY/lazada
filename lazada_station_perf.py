@@ -58,7 +58,7 @@ def get_a_station_perf(station_name, station_data, perf_keep_point=2):
     account = station_name[:-3]
     site = station_name[-2:]
     if site not in static_param.SITE_EN_ZH.keys():
-        raise messagebox.showinfo(f'{site} error',f'{station_name} 中{site}不是有效国家名,请检查后再次运行程序.')
+        raise messagebox.showinfo(f'{site} error', f'{station_name} 中{site}不是有效国家名,请检查后再次运行程序.')
     # 读取站点数据
     if station_data is None:
         return
@@ -98,7 +98,7 @@ def station_perf_by_ordered_sku(station_name, station_data, perf_keep_point=2, h
     site = station_name[-2:]
     if site not in static_param.SITE_EN_ZH.keys():
         raise messagebox.showinfo(f'{site} error',
-            f'{station_name} 中{site}不是有效国家名,请检查后再次运行程序.')
+                                  f'{station_name} 中{site}不是有效国家名,请检查后再次运行程序.')
     if station_data.empty:
         return
     # 初始化站点数据
@@ -172,17 +172,26 @@ def get_all_station_perf(all_stations_folder):
     all_stations_sku_have_ordered_perf = []
     all_stations_sku_no_ordered_perf = []
     # 循环每个站点,得到每个站点的表现
+    # 重复文件站点
+    multiple_files_stations = []
+    # 错误表头站点
+    error_column_name_stations = []
     for station_dir in all_stations_dir:
         station_files = os.listdir(station_dir)
+        station_name = os.path.basename(station_dir)
         if not station_files:
             continue
         elif len(station_files) > 1:
-            raise messagebox.showinfo('重复文件',f'{station_dir} 目录下有多个文件,请删除一个后再次运行.')
-        file_path = os.path.join(station_dir, station_files[0])
-        station_name = os.path.basename(station_dir)
+            multiple_files_stations.append(station_name)
+            continue
         # 站点数据
-        station_data = process_station.read_file(file_path)
-        station_data = process_station.init_file_data(station_name, station_data)
+        file_path = os.path.join(station_dir, station_files[0])
+        try:
+            station_data = process_station.read_file(file_path)
+            station_data = process_station.init_file_data(station_name, station_data)
+        except:
+            error_column_name_stations.append(station_name)
+            continue
         if station_data is None:
             continue
         if station_data.empty:
@@ -199,6 +208,30 @@ def get_all_station_perf(all_stations_folder):
             all_stations_sku_have_ordered_perf.append(sku_have_ordered_perf)
         if sku_no_ordered_perf is not None:
             all_stations_sku_no_ordered_perf.append(sku_no_ordered_perf)
+    # 输出重复文件
+    if multiple_files_stations:
+        lab3.insert('insert', '\n')
+        lab3.insert('insert', '重复文件如下:')
+        lab3.insert('insert', '\n')
+        for file in multiple_files_stations:
+            lab3.insert('insert', file)
+            lab3.insert('insert', '\n')
+        lab3.update()
+
+    if error_column_name_stations:
+        lab3.insert('insert', '\n')
+        lab3.insert('insert', '表头内容有问题的文件如下:')
+        lab3.insert('insert', '\n')
+        for file in error_column_name_stations:
+            lab3.insert('insert', file)
+            lab3.insert('insert', '\n')
+        lab3.update()
+    if error_column_name_stations or multiple_files_stations:
+        lab3.insert('insert', '\n')
+        showtext = '请修改后重新运行程序.'
+        lab3.insert('insert', showtext)
+        lab3.update()
+        time.sleep(10000)
 
     if all_stations_perf:
         stations_perf = pd.concat(all_stations_perf)
@@ -250,8 +283,8 @@ def process_stations_perf():
     writer.save()
     # 输出
     showtext = f'处理完毕,结果输出在文件: {export_path} 中.请关闭此窗口.或此窗口将在3秒钟后自动关闭'
-    lab3.insert('insert','\n')
-    lab3.insert('insert','\n')
+    lab3.insert('insert', '\n')
+    lab3.insert('insert', '\n')
     lab3.insert('insert', showtext)
     lab3.update()
     time.sleep(3)
