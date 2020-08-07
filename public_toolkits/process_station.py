@@ -8,6 +8,7 @@
 
 import os
 import re
+from datetime import datetime
 
 import pandas as pd
 import numpy as np
@@ -117,14 +118,13 @@ def trans_columns_type(data):
     Args:
         data: pd.DataFrame
             站点数据
-
-
     Returns:pd.DataFrame
 
     """
     # lazada广告报表中需要处理的列为:
     # int: Orders,Units Sold
     # float:Est. Spend,Revenue
+    # date:Date
     int_columns = ['Orders', 'Units Sold']
     for col in int_columns:
         if not isinstance(data[col].values[0], (np.int64, np.int32)):
@@ -133,6 +133,9 @@ def trans_columns_type(data):
     for col in float_columns:
         if not isinstance(data[col].values[0], (np.float64, np.float32)):
             data[col] = data[col].apply(lambda x: trans_into_numerical(x, type='float', point=2))
+    if data['Date'].dtypes == object:
+        data['Date'] = pd.to_datetime(data['Date'],yearfirst=True)
+        data['Date'] = data['Date'].apply(lambda x:x.date())
 
 
 def init_file_data(station_name, file_data):
@@ -161,3 +164,41 @@ def init_file_data(station_name, file_data):
     columns = ['Date','Product Name','Seller SKU','SKU ID','Est. Spend','Revenue','Orders','Units Sold','Est ROI']
     file_data = file_data[columns]
     return file_data
+
+
+def init_shop_file_data(shop_data):
+    """
+        初始化站点数据:
+        1.删除站点中列的空格
+        2.重命名
+        3.修改某些列的数据类型
+
+        :param
+        shop_data: pd.DataFrame
+        站点数据
+        :return: pd.DataFrame
+    """
+    if not isinstance(shop_data, pd.DataFrame):
+        raise ImportError(f'lazada店铺数据类型是{type(shop_data)} not pd.DataFrame.')
+    if shop_data.empty:
+        return
+    # 1.删除空格
+    shop_data = strip_space(shop_data)
+    # 2.修改某些列的数据类型
+    # 1.修改付款时间
+    # 2.修改数量
+    # 3.修改销售额
+    if shop_data['付款时间'].dtypes == object:
+        shop_data['付款时间'] = pd.to_datetime(shop_data['付款时间'])
+        shop_data['付款时间'] = shop_data['付款时间'].apply(lambda x:x.date())
+    else:
+        shop_data['付款时间'] = shop_data['付款时间'].apply(lambda x: x.date())
+    if shop_data['数量'].dtypes not in [np.int32, np.int64]:
+        shop_data['数量'] = shop_data['数量'].apply(lambda x: trans_into_numerical(x))
+    if shop_data['销售额'].dtypes not in [np.int32, np.int64]:
+        shop_data['销售额'] = shop_data['销售额'].apply(lambda x: trans_into_numerical(x))
+    # 3.添加两列account,site两列,同时将账号转换成大写
+    shop_data['账号'] = shop_data['账号'].apply(lambda x:x.upper())
+    shop_data['account'] = shop_data['账号'].apply(lambda x:x[:-3])
+    shop_data['site'] = shop_data['账号'].apply(lambda x:x[-2:])
+    return shop_data

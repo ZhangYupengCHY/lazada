@@ -94,7 +94,7 @@ def get_exchange_from_local():
     return pd.read_csv(exchange_rate_local_path)
 
 
-def change_current(transed_country='CNY') -> dict:
+def rate_exchange(transed_country='CNY') -> dict:
     """
     由于接口获取是有时间限制的(每月250次),于是通过接口一个星期更新一次存放在本地,一个星期更新一次即可.
     首先通过本地的文件件获取汇率
