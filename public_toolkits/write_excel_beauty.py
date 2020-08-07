@@ -91,7 +91,10 @@ class ExcelWriterBeauty(object):
         """
 
         # 对df进行检测
-        public_function.detect_df(df)
+        if df is None:
+            raise TypeError(f'import is None.')
+        if not isinstance(df, pd.DataFrame):
+            raise TypeError(f'import type must be pd.DataFrame not {type(df)}.')
         if df.empty:
             return
 
