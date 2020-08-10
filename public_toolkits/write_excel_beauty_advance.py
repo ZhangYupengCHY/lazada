@@ -289,11 +289,3 @@ class ExcelWriterBeauty(object):
         self._book.save(self._save_path)
 
 
-if __name__ == '__main__':
-    save_path = r"C:\Users\Administrator\Desktop\test.xlsx"
-    data_path = r"C:\Users\Administrator\Desktop\lazada总销.csv"
-    data = pd.read_csv(data_path)
-    a = ExcelWriterBeauty(save_path)
-    a.write_excel(data, sheet_name='so', summary_row=False)
-    a.write_excel(data, sheet_name='what', summary_row=False)
-    a.save()
