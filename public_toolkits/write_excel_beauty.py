@@ -312,9 +312,4 @@ class ExcelWriterBeauty(object):
         self._book.save(self._save_path)
 
 
-if __name__ == '__main__':
-    a = ExcelWriterBeauty(save_path)
-    a.write_excel(df, summary_row=True)
-    a.write_excel(df, sheet_name='123', summary_row=False)
-    a.save()
 
