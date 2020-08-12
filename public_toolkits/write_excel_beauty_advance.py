@@ -247,7 +247,6 @@ class ExcelWriterBeauty(object):
             cell_len = min(limit_max_len, list_element_max_len)
             return min(max_cell_width, max(int(extent_len * cell_len), min_cell_width))
 
-        #   todo 修改列宽
         i = 1
         for _, col_value in df.iteritems():
             col_len = get_col_width(col_value, min_cell_width=min_cell_width, max_cell_width=max_cell_width)
