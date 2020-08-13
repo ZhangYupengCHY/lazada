@@ -41,7 +41,7 @@ class ExcelWriterBeauty(object):
         self._book = openpyxl.Workbook()
 
     def write_excel(self, df: pd.DataFrame, sheet_name='Sheet1', min_cell_width=12, max_cell_width=100,
-                    head_height=3, content_height=2,
+                    head_height=4, content_height=3,
                     summary_row=False,
                     head_options={'font_color': [255, 255, 255], 'font-family': 'Microsoft YaHei',
                                   'font-size': 13, 'font-bord': True, 'font-underline': 'none',
@@ -257,12 +257,12 @@ class ExcelWriterBeauty(object):
         # 6.设置行高
         # 首行行高
         # first you should tell xlwt row height and default font height do not match
-        sheet.row_dimensions[1].height = head_height * 20
+        sheet.row_dimensions[1].height = head_height * 10
         # 设置其他行
         for i in range(2, len(df) + 2):
-            sheet.row_dimensions[i].height = content_height * 20
+            sheet.row_dimensions[i].height = content_height * 10
         if summary_row:
-            sheet.row_dimensions[len(df)+1].height = head_height * 20
+            sheet.row_dimensions[len(df)+1].height = head_height * 10
 
         def row_writer(row_value, row_index, sheet, style):
             for i, value in enumerate(row_value):
@@ -289,7 +289,9 @@ class ExcelWriterBeauty(object):
 
 
 if __name__ == '__main__':
-    data = pd.read_csv(data_path)
+    data_path = r"C:\Users\Administrator\Desktop\新建 XLSX 工作表.xlsx"
+    data = pd.read_excel(data_path)
+    save_path = r"C:\Users\Administrator\Desktop\123.xlsx"
     a = ExcelWriterBeauty(save_path)
     a.write_excel(data, sheet_name='so', summary_row=False)
     a.write_excel(data, sheet_name='what', summary_row=False)
