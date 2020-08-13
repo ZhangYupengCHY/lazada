@@ -6,6 +6,8 @@
 # @github  :  Aaron Ramsey
 # @File    : lazada_station_perf.py
 
+
+import numpy as np
 import os
 from datetime import datetime, timedelta
 import time
@@ -20,7 +22,6 @@ from public_toolkits import public_function
 from public_toolkits import process_station
 from public_toolkits import static_param
 from public_toolkits import exchange_rate
-from public_toolkits import write_excel_beauty
 import search_sku
 
 """
@@ -593,8 +594,9 @@ def process_stations_perf():
                                      right_on=['付款时间', '账号', 'sku'], how='left')
 
     sku_have_ordered_perf['销售数量占比'] = [
-         '0%' if ((shop_sku_num == 0) or (
-            pd.isna(shop_sku_num))) else str(round(ad_sku_num * 100 / shop_sku_num, 2)) + '%' for ad_sku_num, shop_sku_num
+        '0%' if ((shop_sku_num == 0) or (
+            pd.isna(shop_sku_num))) else str(round(ad_sku_num * 100 / shop_sku_num, 2)) + '%' for
+        ad_sku_num, shop_sku_num
         in zip(sku_have_ordered_perf['Units Sold'], sku_have_ordered_perf['数量'])]
 
     sku_have_ordered_perf['销售额占比'] = [
@@ -644,7 +646,7 @@ def process_stations_perf():
     # 计算店铺最近1天,最近7天,最近30天
     last_day = max(shop_data['付款时间'])
     seven_day_before = last_day - timedelta(days=7)
-    thirty_day_before = last_day - timedelta(days=30)
+    thirty_day_before = last_day - timedelta(days=31)
 
     # 获取店铺前十的数据
     def get_top_10(station_name, station_df, top_num=10):
@@ -685,7 +687,7 @@ def process_stations_perf():
         return station_top10
 
     # 店铺seller sku销售排名
-    def seller_saler_rank(station_saler):
+    def seller_sale_rank(station_saler):
         """
         :param station_saler:
         :return:
@@ -693,30 +695,65 @@ def process_stations_perf():
         public_function.detect_df(station_saler)
         if station_saler.empty:
             return
-        station_saler.sort_values(by=['付款时间', '销售额'], ascending=[False, False], inplace=True)
-        station_saler_group_by_date = station_saler.groupby(['付款时间'])
-        all_station_saler_rank = []
-        for _, one_day_station_saler_info in station_saler_group_by_date:
-            one_day_rank = range(1, len(one_day_station_saler_info) + 1)
-            one_day_station_saler_info['销售额排名'] = one_day_rank
-            all_station_saler_rank.append(one_day_station_saler_info)
-        return pd.concat(all_station_saler_rank)
+
+        # 账号
+        station_name = station_saler['账号'].values[0]
+
+        station_saler_last_31_days = station_saler[station_saler['付款时间'] >= thirty_day_before]
+        station_saler_last_7_days = station_saler[station_saler['付款时间'] >= seven_day_before]
+        station_saler_last_days = station_saler[station_saler['付款时间'] == last_day]
+
+        # 将最近1天,最近7天,最近31天sku的销售额汇总,排序
+        station_saler_different_days_sales = []
+        days = [31, 7, 1]
+        for day, range_day_data in zip(days, [station_saler_last_31_days, station_saler_last_7_days,
+                                              station_saler_last_days]):
+            sku_saler_rank = range_day_data.groupby(['seller_sku']).agg(
+                {'销售额': 'sum', '数量': 'sum', 'sku': 'first'}).reset_index()
+            sku_saler_rank.sort_values(by=['销售额'], ascending=False, inplace=True)
+            sku_saler_rank['排名'] = range(1, len(sku_saler_rank) + 1)
+            sku_saler_rank.rename(columns={'销售额': f'{day}天销售额', '排名': f'{day}天排名'}, inplace=True)
+            station_saler_different_days_sales.append(sku_saler_rank)
+        station_saler_different_days_sales_rank = pd.merge(station_saler_different_days_sales[0],
+                                                           station_saler_different_days_sales[1], how='left',
+                                                           on='seller_sku')
+        station_saler_different_days_sales_rank = pd.merge(station_saler_different_days_sales_rank,
+                                                           station_saler_different_days_sales[2], how='left',
+                                                           on='seller_sku')
+
+        # 将排名的格式中为np.float64(列中有nan值)转换为int
+        for col in ['31天排名', '7天排名', '1天排名']:
+            if station_saler_different_days_sales_rank[col].dtype not in (np.int32, np.int64):
+                station_saler_different_days_sales_rank[col] = station_saler_different_days_sales_rank[col].apply(
+                    lambda x: str(x).replace('.0','') if ~pd.isna(x) else ' ')
+
+        station_saler_different_days_sales_rank['账号'] = station_name
+        del station_saler_different_days_sales_rank['sku']
+
+        station_saler_different_days_sales_rank.rename(columns={'31天销售额': '总销售额', 'sku_x': 'sku', '数量_x': '总销售数量'},
+                                                       inplace=True)
+
+        station_saler_rank_export_columns = ['账号', 'seller_sku', 'sku', '总销售额', '31天排名', '7天销售额', '7天排名', '1天销售额',
+                                             '1天排名', '总销售数量']
+
+        return station_saler_different_days_sales_rank[station_saler_rank_export_columns]
 
     shop_sale_top10 = []
     shop_sale_rank_info = []
     shop_data_have_seller_sku = shop_data[~pd.isna(shop_data['seller_sku'])]
     station_shop_grouped_data = shop_data_have_seller_sku.groupby(['账号'])
     export_columns_name = ['账号', 'account', 'site', '当日_top10_seller_sku', '近7天_top10_seller_sku',
-                           '近30天_day_top10_seller_sku', 'sales_rank']
+                           '近31天_day_top10_seller_sku', 'sales_rank']
     for station_name, station_df in station_shop_grouped_data:
         account = station_name[:-3]
         site = station_name[-2:]
         lazada_account = station_name_reverse_corresponding_dict.get(account.upper(), f'{account} error')
         station_name = lazada_account + '-' + site
+        #
         station_shop_sale_top10 = get_top_10(station_name, station_df)
         # 店铺排名
         station_df['账号'] = station_name
-        station_df = seller_saler_rank(station_df)
+        station_df = seller_sale_rank(station_df)
         if not station_shop_sale_top10.empty:
             shop_sale_top10.append(station_shop_sale_top10)
         if not station_df.empty:
@@ -727,20 +764,18 @@ def process_stations_perf():
 
     # 店铺排名
     shop_sale_rank_info = pd.concat(shop_sale_rank_info)
-    shop_sale_rank_export_columns = ['付款时间', '账号', 'seller_sku', 'sku', '销售额', '数量', '销售额排名']
-    adjust_date_format(shop_sale_rank_info)
-    shop_sale_rank_info = shop_sale_rank_info[shop_sale_rank_export_columns]
 
-    export_columns_dict = {'站点表现': {'value': stations_perf,
-                                    'export_columns': ['Date', 'lazada_station', 'lazada_account', 'site', 'Est. Spend',
-                                                       'Revenue', 'ROI']},
-                           '有订单sku表现': {'value': sku_have_ordered_perf,
-                                        'export_columns': ['Date', 'lazada_station', 'lazada_account', 'site',
-                                                           'Seller SKU', 'erpsku', 'Est. Spend', 'Revenue', 'Orders',
-                                                           'Units Sold', 'ROI', '店铺销售数量', '店铺销售额', '销售数量占比', '销售额占比']},
-                           '无订单sku表现': {'value': sku_no_ordered_perf,
-                                        'export_columns': ['Date', 'lazada_station', 'lazada_account', 'site',
-                                                           'Seller SKU', 'erpsku', '次数']},
+    export_columns_dict = {'站点联盟表现': {'value': stations_perf,
+                                      'export_columns': ['Date', 'lazada_station', 'lazada_account', 'site',
+                                                         'Est. Spend',
+                                                         'Revenue', 'ROI']},
+                           '联盟出单sku表现': {'value': sku_have_ordered_perf,
+                                         'export_columns': ['Date', 'lazada_station', 'lazada_account', 'site',
+                                                            'Seller SKU', 'erpsku', 'Est. Spend', 'Revenue', 'Orders',
+                                                            'Units Sold', 'ROI', '店铺销售数量', '店铺销售额', '销售数量占比', '销售额占比']},
+                           '联盟未成交sku表现': {'value': sku_no_ordered_perf,
+                                          'export_columns': ['Date', 'lazada_station', 'lazada_account', 'site',
+                                                             'Seller SKU', 'erpsku', '次数']},
                            '站点有销售广告没销售': {'value': shop_sales_ad_no_sales,
                                           'export_columns': ['付款时间', '平台', 'lazada_station', 'lazada_account', 'site',
                                                              '币种', 'seller_sku', 'sku', '数量', '销售额']}}
@@ -756,27 +791,26 @@ def process_stations_perf():
     datetime_now = datetime.now().strftime('%Y-%m-%d_%H-%M')
     export_basename = f'lazada站点表现_{datetime_now}.xlsx'
     export_path = os.path.join(base_path, export_basename)
-    writer = write_excel_beauty.ExcelWriterBeauty(export_path)
+    writer = pd.ExcelWriter(export_path)
     for sheet_name, perf in export_columns_dict.items():
         perf_data = perf['value']
         if len(perf_data) > 0:
-            # perf_data.to_excel(writer, sheet_name=sheet_name, index=False)
-            writer.write_excel(perf_data,sheet_name=sheet_name)
+            perf_data.to_excel(writer, sheet_name=sheet_name, index=False)
     # 输出top10 sku
     if not shop_sale_top10.empty:
-        writer.write_excel(shop_sale_top10, sheet_name='seller sku top10')
+        shop_sale_top10.to_excel(writer, sheet_name='站点总销售sku top10', index=False)
     # 输出店铺销售排名
     if not shop_sale_rank_info.empty:
-        writer.write_excel(shop_sale_rank_info, sheet_name='shop sales rank')
+        shop_sale_rank_info.to_excel(writer, sheet_name='站点总销售sku排名', index=False)
     # 文件件站点情况
     if empty_file_stations:
         empty_file_stations.sort(reverse=False)
         empty_file_stations_df = pd.DataFrame([empty_file_stations]).T
         empty_file_stations_df.columns = ['站点无文件']
-        writer.write_excel(empty_file_stations_df, sheet_name='站点无文件')
+        empty_file_stations_df.to_excel(writer, sheet_name='站点无文件', index=False)
     # 输出汇率
     if not site_exchange_rate_df.empty:
-        writer.write_excel(site_exchange_rate_df, sheet_name='汇率')
+        site_exchange_rate_df.to_excel(writer, sheet_name='汇率', index=False)
     writer.save()
     # 输出
     showtext = f'处理完毕,结果输出在文件: {export_path} 中.请关闭此窗口.或此窗口将在3秒钟后自动关闭'
